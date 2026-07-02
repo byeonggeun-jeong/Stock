@@ -122,10 +122,7 @@ const CustomTooltip = ({ active, payload }: any) => {
         color: '#ffffff',
         fontSize: '0.8rem'
       }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{payload[0].name}</div>
-        <div style={{ color: '#ffffff', fontWeight: 500 }}>
-          ₩{payload[0].value.toLocaleString()}
-        </div>
+        <div style={{ fontWeight: 600 }}>{payload[0].name}</div>
       </div>
     );
   }
