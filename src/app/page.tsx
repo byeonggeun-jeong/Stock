@@ -255,7 +255,7 @@ export default function HomePage() {
     const interval = setInterval(() => {
       const tickers = portfolios.map(p => p.ticker);
       fetchStockPrices(tickers);
-    }, 30000);
+    }, 60000); // 60,000ms = 1분
     return () => clearInterval(interval);
   }, [portfolios, fetchStockPrices]);
 
@@ -727,18 +727,21 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.35rem', textAlign: 'center' }}>
+                    시세 출처: 네이버 금융 API
+                  </div>
                   <button 
                     onClick={() => fetchStockPrices(portfolios.map(p => p.ticker))}
                     className="btn btn-secondary"
                     disabled={refreshing}
-                    style={{ width: '100%', height: '100%', gap: '0.5rem' }}
+                    style={{ width: '100%', gap: '0.5rem' }}
                   >
                     <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                     시세 동기화
                   </button>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.5rem' }}>
-                    실시간 시세가 30초마다 자동 동기화됩니다
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.4rem' }}>
+                    실시간 시세가 1분마다 자동 동기화됩니다
                   </div>
                 </div>
               </div>
