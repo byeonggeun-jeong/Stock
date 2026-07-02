@@ -111,6 +111,27 @@ interface StockPriceInfo {
   currency: string;
 }
 
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        border: '1px solid var(--border-color)',
+        padding: '0.5rem 0.75rem',
+        borderRadius: '0.5rem',
+        color: '#ffffff',
+        fontSize: '0.8rem'
+      }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{payload[0].name}</div>
+        <div style={{ color: '#94a3b8' }}>
+          평가금액: <span style={{ color: '#ffffff', fontWeight: 500 }}>₩{payload[0].value.toLocaleString()}</span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'manage'>('dashboard');
   const [isMounted, setIsMounted] = useState(false);
@@ -824,7 +845,7 @@ export default function HomePage() {
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.4rem' }}>
                     실시간 시세가 1분마다 자동 동기화됩니다
                   </div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--secondary)', fontWeight: 600, textAlign: 'center', marginTop: '0.2rem' }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.2rem' }}>
                     적용 환율: ₩{exchangeRate.toLocaleString(undefined, { minimumFractionDigits: 2 })} (6시간 갱신)
                   </div>
                 </div>
@@ -981,15 +1002,7 @@ export default function HomePage() {
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
-                            <Tooltip 
-                              formatter={(value: any) => `원화 환산 비중`}
-                              contentStyle={{ 
-                                backgroundColor: 'var(--bg-main)', 
-                                borderColor: 'var(--border-color)',
-                                borderRadius: '0.5rem',
-                                color: '#fff'
-                              }} 
-                            />
+                            <Tooltip content={<CustomTooltip />} />
                             <Legend 
                               iconSize={10} 
                               layout="horizontal" 
