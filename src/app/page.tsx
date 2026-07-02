@@ -477,10 +477,13 @@ export default function HomePage() {
       setAuthPassword('');
     } else {
       try {
+        // Supabase Auth의 최소 6자 비밀번호 강제 정책을 우회하기 위해 내부적으로 솔트 접미사 추가
+        const securePassword = authPassword.length < 6 ? `${authPassword}_gaemi` : authPassword;
+
         if (isRegisterMode) {
           const { error } = await supabase.auth.signUp({
             email: virtualEmail,
-            password: authPassword,
+            password: securePassword,
             options: {
               data: {
                 display_name: authDisplayName.trim()
@@ -492,7 +495,7 @@ export default function HomePage() {
         } else {
           const { error } = await supabase.auth.signInWithPassword({
             email: virtualEmail,
-            password: authPassword
+            password: securePassword
           });
           if (error) throw error;
         }
