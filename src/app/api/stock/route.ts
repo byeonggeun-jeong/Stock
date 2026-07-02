@@ -64,16 +64,14 @@ async function fetchStockInfoFromNaver(ticker: string) {
       };
     }
   } else {
-    // 2. 해외 주식 실시간 조회 (Naver Mobile Basic API)
-    // 접미사 .O(나스닥), .N(뉴욕거래소) 자동 매칭 스캔
+    // 2. 해외 주식 실시간 조회 (Naver Mobile Basic API - 병렬 3배속 튜닝)
     const baseTicker = cleanTicker.replace(/\.(O|N)$/, '');
     const suffixes = ['.O', '.N', '']; // 스캔할 접미사 리스트
 
-    for (const suffix of suffixes) {
-      const targetTicker = `${baseTicker}${suffix}`;
-      const url = `https://api.stock.naver.com/stock/${targetTicker}/basic`;
-
-      try {
+    try {
+      const promises = suffixes.map(async (suffix) => {
+        const targetTicker = `${baseTicker}${suffix}`;
+        const url = `https://api.stock.naver.com/stock/${targetTicker}/basic`;
         const res = await fetch(url, {
           headers: {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
@@ -82,27 +80,30 @@ async function fetchStockInfoFromNaver(ticker: string) {
           next: { revalidate: 10 } // 10초 캐싱
         });
         const data = await res.json();
-
         if (data.stockName) {
-          // 조회 성공
-          const cleanPrice = parseFloat(data.closePrice.replace(/,/g, ''));
-          const changeRatio = parseFloat(data.fluctuationsRatio || '0');
-          // 네이버 API에서 currencyType은 객체이므로 안전하게 코드 추출
-          const currencyCode = typeof data.currencyType === 'object' && data.currencyType !== null 
-            ? data.currencyType.code || 'USD' 
-            : data.currencyType || 'USD';
-
-          return {
-            ticker: cleanTicker,
-            price: cleanPrice,
-            changePercent: changeRatio,
-            name: data.stockName,
-            currency: currencyCode
-          };
+          return data;
         }
-      } catch (e) {
-        // 오류 시 다음 접미사 시도
-      }
+        throw new Error(`Suffix ${suffix} not found`);
+      });
+
+      // 가장 빠른 성공 응답 채택
+      const successfulData = await Promise.any(promises);
+
+      const cleanPrice = parseFloat(successfulData.closePrice.replace(/,/g, ''));
+      const changeRatio = parseFloat(successfulData.fluctuationsRatio || '0');
+      const currencyCode = typeof successfulData.currencyType === 'object' && successfulData.currencyType !== null 
+        ? successfulData.currencyType.code || 'USD' 
+        : successfulData.currencyType || 'USD';
+
+      return {
+        ticker: cleanTicker,
+        price: cleanPrice,
+        changePercent: changeRatio,
+        name: successfulData.stockName,
+        currency: currencyCode
+      };
+    } catch (e) {
+      // 모든 병렬 시도 실패 시 아래 fallback으로 흐름
     }
 
     // 모든 시도 실패 시 Fallback 더미 데이터 반환
