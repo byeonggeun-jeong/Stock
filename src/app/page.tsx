@@ -20,8 +20,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { supabase, isMockMode } from '@/lib/supabase';
 
-// 환율 상수 (원화 평가용)
-const EXCHANGE_RATE = 1380; 
+ 
 
 // 사용자 이름을 바탕으로 고유한 파스텔/네온 톤 아바타 배경색 반환
 const getUserAvatarColor = (name: string) => {
@@ -132,6 +131,9 @@ export default function HomePage() {
   const [authPassword, setAuthPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  
+  // 실시간 환율 상태 (기본값 1380원)
+  const [exchangeRate, setExchangeRate] = useState(1380);
   
   // 정렬 관련 상태
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -245,6 +247,9 @@ export default function HomePage() {
           priceMap[item.ticker] = item;
         });
         setStockPrices(prev => ({ ...prev, ...priceMap }));
+      }
+      if (result.exchangeRate) {
+        setExchangeRate(result.exchangeRate);
       }
     } catch (error) {
       console.error('Failed to fetch stock prices:', error);
@@ -546,7 +551,7 @@ export default function HomePage() {
       const priceInfo = stockPrices[item.ticker];
       const currentPrice = priceInfo ? priceInfo.price : item.average_buy_price;
       const totalCurrentVal = currentPrice * item.shares_count;
-      const currentValKRW = item.currency === 'USD' ? totalCurrentVal * EXCHANGE_RATE : totalCurrentVal;
+      const currentValKRW = item.currency === 'USD' ? totalCurrentVal * exchangeRate : totalCurrentVal;
       
       userTotals[item.user_id] = (userTotals[item.user_id] || 0) + currentValKRW;
       
@@ -566,7 +571,7 @@ export default function HomePage() {
       const profitLoss = totalCurrentVal - totalBuyVal;
       const profitLossRatio = totalBuyVal > 0 ? (profitLoss / totalBuyVal) * 100 : 0;
       
-      const buyValKRW = item.currency === 'USD' ? totalBuyVal * EXCHANGE_RATE : totalBuyVal;
+      const buyValKRW = item.currency === 'USD' ? totalBuyVal * exchangeRate : totalBuyVal;
       const profitLossKRW = item.currentValKRW - buyValKRW;
 
       const owner = profiles.find(p => p.id === item.user_id)?.display_name || '알수없음';
@@ -818,6 +823,9 @@ export default function HomePage() {
                   </button>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.4rem' }}>
                     실시간 시세가 1분마다 자동 동기화됩니다
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--secondary)', fontWeight: 600, textAlign: 'center', marginTop: '0.2rem' }}>
+                    적용 환율: ₩{exchangeRate.toLocaleString(undefined, { minimumFractionDigits: 2 })} (6시간 갱신)
                   </div>
                 </div>
               </div>

@@ -125,6 +125,26 @@ async function fetchStockInfoFromNaver(ticker: string) {
   }
 }
 
+// 6시간 주기 캐싱이 반영된 원/달러 실시간 고시 환율 fetch 함수
+async function fetchExchangeRate() {
+  const url = "https://api.stock.naver.com/marketindex/exchange/FX_USDKRW";
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+        "Referer": "https://m.stock.naver.com/"
+      },
+      next: { revalidate: 21600 } // 6시간 캐싱 (21600초)
+    });
+    const data = await res.json();
+    const rateString = data.exchangeInfo.closePrice;
+    return parseFloat(rateString.replace(/,/g, ''));
+  } catch (e) {
+    console.error("Failed to fetch exchange rate from Naver, fallback to 1380:", e);
+    return 1380;
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tickersParam = searchParams.get('tickers');
@@ -156,16 +176,17 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, exchangeRate: 1380 });
   }
 
   try {
-    // 모든 요청 티커를 하이브리드 네이버 금융 API로 병렬 실시간 획득
-    const data = await Promise.all(
-      tickers.map(ticker => fetchStockInfoFromNaver(ticker))
-    );
+    // 모든 요청 티커 및 환율을 병렬로 획득
+    const [stockData, exchangeRate] = await Promise.all([
+      Promise.all(tickers.map(ticker => fetchStockInfoFromNaver(ticker))),
+      fetchExchangeRate()
+    ]);
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: stockData, exchangeRate });
   } catch (globalError: any) {
     console.error('Hybrid Naver API global error:', globalError);
     return NextResponse.json({ error: 'Failed to fetch stock prices', details: globalError.message }, { status: 500 });
