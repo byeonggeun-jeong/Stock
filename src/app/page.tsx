@@ -12,7 +12,10 @@ import {
   Settings, 
   LogOut, 
   LogIn, 
-  Lock
+  Lock,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { supabase, isMockMode } from '@/lib/supabase';
@@ -129,6 +132,10 @@ export default function HomePage() {
   const [authPassword, setAuthPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  
+  // 정렬 관련 상태
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   // 주식 입력 폼 상태
   const [formTicker, setFormTicker] = useState('');
@@ -591,6 +598,72 @@ export default function HomePage() {
     ? calculatedStocks
     : calculatedStocks.filter(s => s.user_id === selectedUserFilter);
 
+  // 정렬 핸들러
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortColumn(null); // 3번째 클릭 시 정렬 해제
+      }
+    } else {
+      setSortColumn(columnKey);
+      setSortDirection('asc');
+    }
+  };
+
+  // 정렬 적용된 주식 목록
+  const sortedStocks = useMemo(() => {
+    const stocks = [...filteredCalculatedStocks];
+    if (!sortColumn) return stocks;
+
+    return stocks.sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+
+      if (sortColumn === 'owner') {
+        aVal = a.owner;
+        bVal = b.owner;
+      } else if (sortColumn === 'ticker') {
+        aVal = a.ticker;
+        bVal = b.ticker;
+      } else if (sortColumn === 'currentPrice') {
+        aVal = a.currentPrice;
+        bVal = b.currentPrice;
+      } else if (sortColumn === 'changePercent') {
+        aVal = a.changePercent;
+        bVal = b.changePercent;
+      } else if (sortColumn === 'profitLossRatio') {
+        aVal = a.profitLossRatio;
+        bVal = b.profitLossRatio;
+      } else if (sortColumn === 'portfolioRatio') {
+        aVal = a.portfolioRatio;
+        bVal = b.portfolioRatio;
+      } else {
+        return 0;
+      }
+
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredCalculatedStocks, sortColumn, sortDirection]);
+
+  // 정렬 화살표 아이콘 렌더링 함수
+  const getSortIcon = (columnKey: string) => {
+    if (sortColumn !== columnKey) {
+      return <ArrowUpDown size={12} style={{ marginLeft: '0.25rem', opacity: 0.35, verticalAlign: 'middle' }} />;
+    }
+    return sortDirection === 'asc'
+      ? <ChevronUp size={12} style={{ marginLeft: '0.25rem', color: 'var(--primary)', verticalAlign: 'middle' }} />
+      : <ChevronDown size={12} style={{ marginLeft: '0.25rem', color: 'var(--primary)', verticalAlign: 'middle' }} />;
+  };
+
   const isFilterTargetMe = currentUser !== null && selectedUserFilter === currentUser.id;
   const showSummaryStats = isFilterTargetMe; 
 
@@ -790,16 +863,28 @@ export default function HomePage() {
                       <table className="stock-table">
                         <thead>
                           <tr>
-                            <th>보유자</th>
-                            <th>종목 (티커)</th>
-                            <th>현재가</th>
-                            <th>당일 등락률</th>
-                            <th>수익률</th>
-                            <th>보유 비중 (%)</th>
+                            <th onClick={() => handleSort('owner')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              보유자 {getSortIcon('owner')}
+                            </th>
+                            <th onClick={() => handleSort('ticker')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              종목 (티커) {getSortIcon('ticker')}
+                            </th>
+                            <th onClick={() => handleSort('currentPrice')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              현재가 {getSortIcon('currentPrice')}
+                            </th>
+                            <th onClick={() => handleSort('changePercent')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              당일 등락률 {getSortIcon('changePercent')}
+                            </th>
+                            <th onClick={() => handleSort('profitLossRatio')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              수익률 {getSortIcon('profitLossRatio')}
+                            </th>
+                            <th onClick={() => handleSort('portfolioRatio')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                              보유 비중 (%) {getSortIcon('portfolioRatio')}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredCalculatedStocks.map((stock) => (
+                          {sortedStocks.map((stock) => (
                             <tr key={stock.id}>
                               <td>
                                 <div className="owner-cell">
