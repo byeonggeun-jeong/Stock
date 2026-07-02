@@ -434,8 +434,17 @@ export default function HomePage() {
       return;
     }
 
-    // 이름 기반 내부 가상 이메일 생성 (Supabase 및 구별용)
-    const virtualEmail = `${authDisplayName.trim()}@stockus.com`;
+    // 한글 이름 등 특수문자 입력 시 Supabase 이메일 유효성 통과를 위한 영숫자 변환 헬퍼
+    const getSafeEmail = (name: string) => {
+      let code = '';
+      const trimmed = name.trim();
+      for (let i = 0; i < trimmed.length; i++) {
+        code += trimmed.charCodeAt(i).toString(36);
+      }
+      return `user_${code}@stockus.com`;
+    };
+
+    const virtualEmail = getSafeEmail(authDisplayName);
 
     if (authPassword.length < 4) {
       alert('비밀번호는 최소 4글자 이상이어야 합니다.');
