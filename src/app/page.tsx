@@ -209,11 +209,14 @@ export default function HomePage() {
 
   const loadSupabaseData = async () => {
     try {
-      const { data: loadedProfiles } = await supabase.from('profiles').select('*');
-      const { data: loadedPortfolios } = await supabase.from('portfolios').select('*');
+      // 2배 속도 개선: Profiles와 Portfolios를 동시에 병렬로 로드
+      const [profilesRes, portfoliosRes] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('portfolios').select('*')
+      ]);
         
-      if (loadedProfiles) setProfiles(loadedProfiles);
-      if (loadedPortfolios) setPortfolios(loadedPortfolios);
+      if (profilesRes.data) setProfiles(profilesRes.data);
+      if (portfoliosRes.data) setPortfolios(portfoliosRes.data);
     } catch (err) {
       console.error('Error loading Supabase data:', err);
     }

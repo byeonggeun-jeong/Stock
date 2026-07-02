@@ -27,7 +27,7 @@ async function fetchStockInfoFromNaver(ticker: string) {
     
     try {
       const res = await fetch(url, {
-        next: { revalidate: 10 } // 10초 캐싱
+        next: { revalidate: 60 } // 60초 캐싱 (동기화 주기에 일치)
       });
       const buffer = await res.arrayBuffer();
       // 네이버 폴링 API는 EUC-KR 인코딩이므로 TextDecoder로 한글 깨짐 우회
@@ -77,7 +77,7 @@ async function fetchStockInfoFromNaver(ticker: string) {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
             "Referer": "https://m.stock.naver.com/"
           },
-          next: { revalidate: 10 } // 10초 캐싱
+          next: { revalidate: 60 } // 60초 캐싱 (동기화 주기에 일치)
         });
         const data = await res.json();
         if (data.stockName) {
