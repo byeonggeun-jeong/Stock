@@ -123,8 +123,8 @@ const CustomTooltip = ({ active, payload }: any) => {
         fontSize: '0.8rem'
       }}>
         <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{payload[0].name}</div>
-        <div style={{ color: '#94a3b8' }}>
-          평가금액: <span style={{ color: '#ffffff', fontWeight: 500 }}>₩{payload[0].value.toLocaleString()}</span>
+        <div style={{ color: '#ffffff', fontWeight: 500 }}>
+          ₩{payload[0].value.toLocaleString()}
         </div>
       </div>
     );
