@@ -437,6 +437,11 @@ export default function HomePage() {
     // 이름 기반 내부 가상 이메일 생성 (Supabase 및 구별용)
     const virtualEmail = `${authDisplayName.trim()}@stockus.com`;
 
+    if (authPassword.length < 4) {
+      alert('비밀번호는 최소 4글자 이상이어야 합니다.');
+      return;
+    }
+
     if (isMockMode) {
       const storedProfiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
       
