@@ -585,3 +585,19 @@ body {
     font-weight: 500;
   }
 }
+
+/* 모바일 전용 정렬 셀렉터 레이아웃 */
+.mobile-sort-container {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-sort-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+    padding: 0 0.5rem;
+    gap: 0.25rem;
+  }
+}

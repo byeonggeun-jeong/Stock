@@ -132,14 +132,17 @@ interface StockFormProps {
   editingItem: PortfolioItem | null;
   onSave: (data: { ticker: string; stock_name: string; shares_count: number; average_buy_price: number; currency: 'KRW' | 'USD' }) => Promise<void>;
   onCancel: () => void;
+  stockPrices: Record<string, StockPriceInfo>;
+  setStockPrices: React.Dispatch<React.SetStateAction<Record<string, StockPriceInfo>>>;
 }
 
-const StockForm = ({ editingItem, onSave, onCancel }: StockFormProps) => {
+const StockForm = ({ editingItem, onSave, onCancel, stockPrices, setStockPrices }: StockFormProps) => {
   const [ticker, setTicker] = useState('');
   const [stockName, setStockName] = useState('');
   const [sharesCount, setSharesCount] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
   const [currency, setCurrency] = useState<'KRW' | 'USD'>('USD');
+  const [fetchingName, setFetchingName] = useState(false);
 
   // 수정 대상이 변경될 때 폼 값 채우기
   useEffect(() => {
@@ -157,6 +160,47 @@ const StockForm = ({ editingItem, onSave, onCancel }: StockFormProps) => {
       setCurrency('USD');
     }
   }, [editingItem]);
+
+  const handleTickerBlur = async () => {
+    const cleanTicker = ticker.trim().toUpperCase();
+    if (!cleanTicker) return;
+
+    if (cleanTicker !== ticker) {
+      setTicker(cleanTicker);
+    }
+
+    // 1. 이미 캐시된 주식/코인 정보가 있다면 즉시 채우기
+    if (stockPrices[cleanTicker]?.name) {
+      setStockName(stockPrices[cleanTicker].name);
+      const isKorean = /^\d{6}/.test(cleanTicker.replace(/\.(KS|KQ)$/, ''));
+      const isCoin = cleanTicker.startsWith('KRW-') || ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'SHIB', 'TRX', 'LINK', 'NEAR', 'MATIC', 'BCH', 'LTC', 'ETC', 'APT'].includes(cleanTicker);
+      setCurrency((isKorean || isCoin) ? 'KRW' : 'USD');
+      return;
+    }
+
+    // 2. 캐시된 정보가 없다면 API 호출해서 가져오기
+    try {
+      setFetchingName(true);
+      const res = await fetch(`/api/stock?tickers=${cleanTicker}`);
+      const result = await res.json();
+      if (result.data && result.data.length > 0) {
+        const info = result.data[0];
+        if (info.name && info.name !== cleanTicker) {
+          setStockName(info.name);
+          setCurrency(info.currency as 'KRW' | 'USD');
+          
+          setStockPrices(prev => ({
+            ...prev,
+            [cleanTicker]: info
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch stock name on blur:', error);
+    } finally {
+      setFetchingName(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +235,14 @@ const StockForm = ({ editingItem, onSave, onCancel }: StockFormProps) => {
             placeholder="예: AAPL 또는 005930.KS"
             value={ticker}
             onChange={(e) => setTicker(e.target.value)}
+            onBlur={handleTickerBlur}
+            disabled={fetchingName}
           />
+          {fetchingName && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', display: 'block', marginTop: '0.2rem' }}>
+              종목 정보를 조회하는 중...
+            </span>
+          )}
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.2rem' }}>
             * 한국 주식은 종목코드 뒤에 .KS(코스피) 또는 .KQ(코스닥)를 붙여야 합니다.
           </span>
@@ -784,7 +835,7 @@ export default function HomePage() {
     return rawEvals.map(item => {
       const priceInfo = stockPrices[item.ticker];
       const changePercent = priceInfo ? priceInfo.changePercent : 0;
-      const stock_name = item.stock_name;
+      const stock_name = (priceInfo && priceInfo.name) ? priceInfo.name : item.stock_name;
       
       const totalBuyVal = item.average_buy_price * item.shares_count;
       const totalCurrentVal = item.currentPrice * item.shares_count;
@@ -1109,6 +1160,61 @@ export default function HomePage() {
                     </div>
                   </div>
 
+                  {/* 모바일 전용 정렬 셀렉터 */}
+                  <div className="mobile-sort-container">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>정렬:</span>
+                    <select
+                      value={sortColumn || 'none'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'none') {
+                          setSortColumn(null);
+                        } else {
+                          setSortColumn(val);
+                        }
+                      }}
+                      className="form-control"
+                      style={{ 
+                        width: 'auto', 
+                        display: 'inline-block', 
+                        padding: '0.25rem 1.5rem 0.25rem 0.5rem', 
+                        fontSize: '0.75rem', 
+                        height: 'auto',
+                        marginLeft: '0.35rem',
+                        background: 'var(--bg-main)',
+                        borderColor: 'var(--border-color)',
+                        borderRadius: '0.35rem',
+                        color: 'var(--text-primary)'
+                      }}
+                    >
+                      <option value="none">기본순</option>
+                      <option value="owner">보유자순</option>
+                      <option value="ticker">종목(티커)순</option>
+                      <option value="currentPrice">현재가순</option>
+                      <option value="changePercent">당일등락률순</option>
+                      <option value="profitLossRatio">수익률순</option>
+                      <option value="portfolioRatio">보유비중순</option>
+                    </select>
+
+                    {sortColumn && (
+                      <button
+                        onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        className="btn btn-secondary"
+                        style={{ 
+                          padding: '0.25rem 0.5rem', 
+                          fontSize: '0.75rem', 
+                          marginLeft: '0.35rem',
+                          height: 'auto',
+                          lineHeight: '1',
+                          display: 'inline-flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        {sortDirection === 'asc' ? '▲' : '▼'}
+                      </button>
+                    )}
+                  </div>
+
                   <div className="stock-table-wrapper">
                     {filteredCalculatedStocks.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-secondary)' }}>
@@ -1326,6 +1432,8 @@ export default function HomePage() {
                     editingItem={portfolios.find(p => p.id === editingId) || null}
                     onSave={handleSaveStock}
                     onCancel={resetForm}
+                    stockPrices={stockPrices}
+                    setStockPrices={setStockPrices}
                   />
                 )}
               </div>
