@@ -145,6 +145,110 @@ async function fetchExchangeRate() {
   }
 }
 
+// --- 코인(Upbit) API 지원 기능 추가 ---
+
+const COIN_SYMBOLS = new Set([
+  'BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'SHIB', 'TRX', 'LINK', 'NEAR', 'MATIC', 'BCH', 'LTC', 'ETC', 'APT'
+]);
+
+const COIN_FALLBACK_NAMES: Record<string, string> = {
+  'KRW-BTC': '비트코인',
+  'KRW-ETH': '이더리움',
+  'KRW-SOL': '솔라나',
+  'KRW-XRP': '리플',
+  'KRW-ADA': '에이다',
+  'KRW-DOGE': '도지코인',
+  'KRW-DOT': '폴카닷',
+  'KRW-AVAX': '아발란체',
+  'KRW-SHIB': '시바이누',
+  'KRW-TRX': '트론',
+  'KRW-LINK': '체인링크',
+  'KRW-NEAR': '니어프로토콜',
+  'KRW-BCH': '비트코인캐시',
+  'KRW-LTC': '라이트코인',
+  'KRW-ETC': '이더리움클래식',
+  'KRW-APT': '앱토스'
+};
+
+function isCoin(ticker: string): boolean {
+  const clean = ticker.toUpperCase();
+  return clean.startsWith('KRW-') || COIN_SYMBOLS.has(clean);
+}
+
+function getUpbitMarketId(ticker: string): string {
+  const clean = ticker.toUpperCase();
+  if (clean.startsWith('KRW-')) return clean;
+  return `KRW-${clean}`;
+}
+
+let coinNameMap: Record<string, { korean: string; english: string }> = {};
+let lastMarketFetch = 0;
+
+async function fetchCoinNames(): Promise<Record<string, { korean: string; english: string }>> {
+  const now = Date.now();
+  if (Object.keys(coinNameMap).length > 0 && now - lastMarketFetch < 3600000 * 24) {
+    return coinNameMap;
+  }
+  
+  try {
+    const res = await fetch('https://api.upbit.com/v1/market/all');
+    const markets = await res.json();
+    const newMap: Record<string, { korean: string; english: string }> = {};
+    if (Array.isArray(markets)) {
+      markets.forEach(m => {
+        newMap[m.market] = { korean: m.korean_name, english: m.english_name };
+      });
+      coinNameMap = newMap;
+      lastMarketFetch = now;
+    }
+  } catch (e) {
+    console.error('Failed to fetch coin names from Upbit:', e);
+  }
+  return coinNameMap;
+}
+
+async function fetchCoinInfoFromUpbit(ticker: string) {
+  const cleanTicker = ticker.trim().toUpperCase();
+  const marketId = getUpbitMarketId(cleanTicker);
+
+  try {
+    const [priceRes, names] = await Promise.all([
+      fetch(`https://api.upbit.com/v1/ticker?markets=${marketId}`, {
+        next: { revalidate: 30 } // 코인은 30초 단위로 Next.js 캐싱 적용 (기동 속도 확보)
+      }),
+      fetchCoinNames()
+    ]);
+    const priceData = await priceRes.json();
+    if (priceData && priceData.length > 0) {
+      const info = priceData[0];
+      const coinNames = names[marketId] || { 
+        korean: COIN_FALLBACK_NAMES[marketId] || cleanTicker.replace('KRW-', ''), 
+        english: cleanTicker.replace('KRW-', '') 
+      };
+      
+      return {
+        ticker: cleanTicker,
+        price: info.trade_price,
+        changePercent: info.signed_change_rate * 100,
+        name: coinNames.korean,
+        currency: 'KRW'
+      };
+    }
+    throw new Error('No ticker data from Upbit');
+  } catch (e: any) {
+    console.error(`Upbit API error for ${marketId}:`, e.message);
+    const fallbackName = COIN_FALLBACK_NAMES[marketId] || cleanTicker;
+    return {
+      ticker: cleanTicker,
+      price: cleanTicker === 'BTC' ? 95000000 : 100000,
+      changePercent: 0,
+      name: fallbackName,
+      currency: 'KRW',
+      isFallback: true
+    };
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tickersParam = searchParams.get('tickers');
@@ -161,6 +265,19 @@ export async function GET(request: Request) {
   if (useMock) {
     const data = tickers.map(ticker => {
       const code = ticker.replace(/\.(KS|KQ|O|N)$/, '');
+      
+      // 목 모드에서의 코인 데이터 모킹
+      if (isCoin(ticker)) {
+        const marketId = getUpbitMarketId(ticker);
+        return {
+          ticker,
+          price: ticker === 'BTC' || ticker === 'KRW-BTC' ? 92500000 : 4800000,
+          changePercent: 1.25,
+          name: COIN_FALLBACK_NAMES[marketId] || ticker,
+          currency: 'KRW'
+        };
+      }
+      
       const mockInfo = MOCK_STOCK_PRICES[code] || MOCK_STOCK_PRICES[ticker] || {
         price: 100,
         changePercent: 0,
@@ -182,13 +299,18 @@ export async function GET(request: Request) {
   try {
     // 모든 요청 티커 및 환율을 병렬로 획득
     const [stockData, exchangeRate] = await Promise.all([
-      Promise.all(tickers.map(ticker => fetchStockInfoFromNaver(ticker))),
+      Promise.all(tickers.map(ticker => {
+        if (isCoin(ticker)) {
+          return fetchCoinInfoFromUpbit(ticker);
+        }
+        return fetchStockInfoFromNaver(ticker);
+      })),
       fetchExchangeRate()
     ]);
 
     return NextResponse.json({ data: stockData, exchangeRate });
   } catch (globalError: any) {
-    console.error('Hybrid Naver API global error:', globalError);
-    return NextResponse.json({ error: 'Failed to fetch stock prices', details: globalError.message }, { status: 500 });
+    console.error('Hybrid Naver/Upbit API global error:', globalError);
+    return NextResponse.json({ error: 'Failed to fetch stock/coin prices', details: globalError.message }, { status: 500 });
   }
 }

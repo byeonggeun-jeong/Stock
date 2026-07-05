@@ -430,11 +430,12 @@ export default function HomePage() {
       setFormTicker(ticker);
     }
 
-    // 1. 이미 캐시된 주식 정보가 있다면 즉시 채우기
+    // 1. 이미 캐시된 주식/코인 정보가 있다면 즉시 채우기
     if (stockPrices[ticker]?.name) {
       setFormStockName(stockPrices[ticker].name);
       const isKorean = /^\d{6}/.test(ticker.replace(/\.(KS|KQ)$/, ''));
-      setFormCurrency(isKorean ? 'KRW' : 'USD');
+      const isCoin = ticker.startsWith('KRW-') || ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'SHIB', 'TRX', 'LINK', 'NEAR', 'MATIC', 'BCH', 'LTC', 'ETC', 'APT'].includes(ticker);
+      setFormCurrency((isKorean || isCoin) ? 'KRW' : 'USD');
       return;
     }
 
