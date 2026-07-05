@@ -1134,6 +1134,7 @@ export default function HomePage() {
                               outerRadius={80}
                               paddingAngle={3}
                               dataKey="value"
+                              isAnimationActive={false}
                             >
                               {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
