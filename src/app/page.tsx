@@ -628,7 +628,7 @@ export default function HomePage() {
     return rawEvals.map(item => {
       const priceInfo = stockPrices[item.ticker];
       const changePercent = priceInfo ? priceInfo.changePercent : 0;
-      const stock_name = (priceInfo && priceInfo.name) ? priceInfo.name : item.stock_name;
+      const stock_name = item.stock_name;
       
       const totalBuyVal = item.average_buy_price * item.shares_count;
       const totalCurrentVal = item.currentPrice * item.shares_count;
@@ -1177,14 +1177,7 @@ export default function HomePage() {
                           placeholder="예: AAPL 또는 005930.KS"
                           value={formTicker}
                           onChange={(e) => setFormTicker(e.target.value)}
-                          onBlur={handleTickerBlur}
-                          disabled={fetchingName}
                         />
-                        {fetchingName && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--primary)', display: 'block', marginTop: '0.2rem' }}>
-                            종목 정보를 조회하는 중...
-                          </span>
-                        )}
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.2rem' }}>
                           * 한국 주식은 종목코드 뒤에 .KS(코스피) 또는 .KQ(코스닥)를 붙여야 합니다.
                         </span>
