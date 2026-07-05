@@ -127,6 +127,144 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
+// --- 독립된 자식 컴포넌트로 주식 등록/수정 폼 분리 (타이핑 시의 랙을 근본적으로 제거) ---
+interface StockFormProps {
+  editingItem: PortfolioItem | null;
+  onSave: (data: { ticker: string; stock_name: string; shares_count: number; average_buy_price: number; currency: 'KRW' | 'USD' }) => Promise<void>;
+  onCancel: () => void;
+}
+
+const StockForm = ({ editingItem, onSave, onCancel }: StockFormProps) => {
+  const [ticker, setTicker] = useState('');
+  const [stockName, setStockName] = useState('');
+  const [sharesCount, setSharesCount] = useState('');
+  const [buyPrice, setBuyPrice] = useState('');
+  const [currency, setCurrency] = useState<'KRW' | 'USD'>('USD');
+
+  // 수정 대상이 변경될 때 폼 값 채우기
+  useEffect(() => {
+    if (editingItem) {
+      setTicker(editingItem.ticker);
+      setStockName(editingItem.stock_name);
+      setSharesCount(editingItem.shares_count.toString());
+      setBuyPrice(editingItem.average_buy_price.toString());
+      setCurrency(editingItem.currency);
+    } else {
+      setTicker('');
+      setStockName('');
+      setSharesCount('');
+      setBuyPrice('');
+      setCurrency('USD');
+    }
+  }, [editingItem]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticker || !stockName || !sharesCount || !buyPrice) {
+      alert('모든 정보를 정확히 입력해주세요.');
+      return;
+    }
+    const sharesNum = parseFloat(sharesCount);
+    const buyNum = parseFloat(buyPrice);
+    if (isNaN(sharesNum) || sharesNum <= 0 || isNaN(buyNum) || buyNum <= 0) {
+      alert('수량과 매수단가는 0보다 커야 합니다.');
+      return;
+    }
+    onSave({
+      ticker: ticker.trim().toUpperCase(),
+      stock_name: stockName.trim(),
+      shares_count: sharesNum,
+      average_buy_price: buyNum,
+      currency
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="form-group">
+          <label htmlFor="ticker">주식 티커 (Symbol)</label>
+          <input 
+            id="ticker"
+            type="text" 
+            className="form-control" 
+            placeholder="예: AAPL 또는 005930.KS"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value)}
+          />
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.2rem' }}>
+            * 한국 주식은 종목코드 뒤에 .KS(코스피) 또는 .KQ(코스닥)를 붙여야 합니다.
+          </span>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="stockName">한글명/영문명 (표시 이름)</label>
+          <input 
+            id="stockName"
+            type="text" 
+            className="form-control" 
+            placeholder="예: 애플 또는 삼성전자"
+            value={stockName}
+            onChange={(e) => setStockName(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+        <div className="form-group">
+          <label htmlFor="shares">보유 수량 (주) [안전 비공개]</label>
+          <input 
+            id="shares"
+            type="number" 
+            step="any"
+            className="form-control" 
+            placeholder="수량"
+            value={sharesCount}
+            onChange={(e) => setSharesCount(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="buyPrice">평균 매수 단가</label>
+          <input 
+            id="buyPrice"
+            type="number" 
+            step="any"
+            className="form-control" 
+            placeholder="단가"
+            value={buyPrice}
+            onChange={(e) => setBuyPrice(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="currency">거래 통화</label>
+          <select 
+            id="currency"
+            className="form-control"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as 'KRW' | 'USD')}
+          >
+            <option value="USD">USD ($)</option>
+            <option value="KRW">KRW (₩)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+        <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+          {editingItem ? '수정사항 저장' : '내 포트폴리오에 추가'}
+        </button>
+        {editingItem && (
+          <button type="button" onClick={onCancel} className="btn btn-secondary">
+            취소
+          </button>
+        )}
+      </div>
+    </form>
+  );
+};
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'manage'>('dashboard');
   const [isMounted, setIsMounted] = useState(false);
@@ -156,13 +294,7 @@ export default function HomePage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   // 주식 입력 폼 상태
-  const [formTicker, setFormTicker] = useState('');
-  const [formStockName, setFormStockName] = useState('');
-  const [formSharesCount, setFormSharesCount] = useState('');
-  const [formBuyPrice, setFormBuyPrice] = useState('');
-  const [formCurrency, setFormCurrency] = useState<'KRW' | 'USD'>('USD');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [fetchingName, setFetchingName] = useState(false);
 
   // 1. 초기 데이터 마운트 및 로컬스토리지 연동 (Mock 모드 전용)
   useEffect(() => {
@@ -294,28 +426,14 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [portfolios, fetchStockPrices]);
 
-  // 주식 포트폴리오 저장
-  const handleSaveStock = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveStock = async (data: { ticker: string; stock_name: string; shares_count: number; average_buy_price: number; currency: 'KRW' | 'USD' }) => {
     if (!currentUser) {
       alert('로그인이 필요한 기능입니다.');
       setAuthModalOpen(true);
       return;
     }
 
-    if (!formTicker || !formStockName || !formSharesCount || !formBuyPrice) {
-      alert('모든 정보를 정확히 입력해주세요.');
-      return;
-    }
-
-    const sharesCountNum = parseFloat(formSharesCount);
-    const buyPriceNum = parseFloat(formBuyPrice);
-    const formattedTicker = formTicker.trim().toUpperCase();
-
-    if (isNaN(sharesCountNum) || sharesCountNum <= 0 || isNaN(buyPriceNum) || buyPriceNum <= 0) {
-      alert('수량과 매수단가는 0보다 커야 합니다.');
-      return;
-    }
+    const { ticker, stock_name, shares_count, average_buy_price, currency } = data;
 
     if (isMockMode) {
       const storedPortfolios = JSON.parse(localStorage.getItem('mock_portfolios') || '[]');
@@ -323,7 +441,7 @@ export default function HomePage() {
       if (editingId) {
         const updated = storedPortfolios.map((item: PortfolioItem) => 
           item.id === editingId 
-            ? { ...item, ticker: formattedTicker, stock_name: formStockName, shares_count: sharesCountNum, average_buy_price: buyPriceNum, currency: formCurrency }
+            ? { ...item, ticker, stock_name, shares_count, average_buy_price, currency }
             : item
         );
         localStorage.setItem('mock_portfolios', JSON.stringify(updated));
@@ -333,11 +451,11 @@ export default function HomePage() {
         const newItem: PortfolioItem = {
           id: `p-${Date.now()}`,
           user_id: currentUser.id,
-          ticker: formattedTicker,
-          stock_name: formStockName,
-          shares_count: sharesCountNum,
-          average_buy_price: buyPriceNum,
-          currency: formCurrency
+          ticker,
+          stock_name,
+          shares_count,
+          average_buy_price,
+          currency
         };
         const updated = [...storedPortfolios, newItem];
         localStorage.setItem('mock_portfolios', JSON.stringify(updated));
@@ -350,11 +468,11 @@ export default function HomePage() {
           const { error } = await supabase
             .from('portfolios')
             .update({
-              ticker: formattedTicker,
-              stock_name: formStockName,
-              shares_count: sharesCountNum,
-              average_buy_price: buyPriceNum,
-              currency: formCurrency,
+              ticker,
+              stock_name,
+              shares_count,
+              average_buy_price,
+              currency,
               updated_at: new Date().toISOString()
             })
             .eq('id', editingId);
@@ -365,11 +483,11 @@ export default function HomePage() {
             .from('portfolios')
             .insert({
               user_id: currentUser.id,
-              ticker: formattedTicker,
-              stock_name: formStockName,
-              shares_count: sharesCountNum,
-              average_buy_price: buyPriceNum,
-              currency: formCurrency
+              ticker,
+              stock_name,
+              shares_count,
+              average_buy_price,
+              currency
             });
             
           if (error) throw error;
@@ -408,62 +526,10 @@ export default function HomePage() {
 
   const handleEditStock = (item: PortfolioItem) => {
     setEditingId(item.id);
-    setFormTicker(item.ticker);
-    setFormStockName(item.stock_name);
-    setFormSharesCount(item.shares_count.toString());
-    setFormBuyPrice(item.average_buy_price.toString());
-    setFormCurrency(item.currency);
   };
 
   const resetForm = () => {
-    setFormTicker('');
-    setFormStockName('');
-    setFormSharesCount('');
-    setFormBuyPrice('');
-    setFormCurrency('USD');
     setEditingId(null);
-  };
-
-  // 티커 입력 필드 포커스 아웃 시 자동으로 종목명 가져오기
-  const handleTickerBlur = async () => {
-    const ticker = formTicker.trim().toUpperCase();
-    if (!ticker) return;
-
-    if (ticker !== formTicker) {
-      setFormTicker(ticker);
-    }
-
-    // 1. 이미 캐시된 주식/코인 정보가 있다면 즉시 채우기
-    if (stockPrices[ticker]?.name) {
-      setFormStockName(stockPrices[ticker].name);
-      const isKorean = /^\d{6}/.test(ticker.replace(/\.(KS|KQ)$/, ''));
-      const isCoin = ticker.startsWith('KRW-') || ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'SHIB', 'TRX', 'LINK', 'NEAR', 'MATIC', 'BCH', 'LTC', 'ETC', 'APT'].includes(ticker);
-      setFormCurrency((isKorean || isCoin) ? 'KRW' : 'USD');
-      return;
-    }
-
-    // 2. 캐시된 정보가 없다면 API 호출해서 가져오기
-    try {
-      setFetchingName(true);
-      const res = await fetch(`/api/stock?tickers=${ticker}`);
-      const result = await res.json();
-      if (result.data && result.data.length > 0) {
-        const info = result.data[0];
-        if (info.name && info.name !== ticker) {
-          setFormStockName(info.name);
-          setFormCurrency(info.currency as 'KRW' | 'USD');
-          
-          setStockPrices(prev => ({
-            ...prev,
-            [ticker]: info
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch stock name on blur:', error);
-    } finally {
-      setFetchingName(false);
-    }
   };
 
   // 친구 목록 클릭 시 이름 채우고 비밀번호 창 오픈
@@ -1166,88 +1232,11 @@ export default function HomePage() {
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSaveStock}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div className="form-group">
-                        <label htmlFor="ticker">주식 티커 (Symbol)</label>
-                        <input 
-                          id="ticker"
-                          type="text" 
-                          className="form-control" 
-                          placeholder="예: AAPL 또는 005930.KS"
-                          value={formTicker}
-                          onChange={(e) => setFormTicker(e.target.value)}
-                        />
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.2rem' }}>
-                          * 한국 주식은 종목코드 뒤에 .KS(코스피) 또는 .KQ(코스닥)를 붙여야 합니다.
-                        </span>
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="stockName">한글명/영문명 (표시 이름)</label>
-                        <input 
-                          id="stockName"
-                          type="text" 
-                          className="form-control" 
-                          placeholder="예: 애플 또는 삼성전자"
-                          value={formStockName}
-                          onChange={(e) => setFormStockName(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
-                      <div className="form-group">
-                        <label htmlFor="shares">보유 수량 (주) [안전 비공개]</label>
-                        <input 
-                          id="shares"
-                          type="number" 
-                          step="any"
-                          className="form-control" 
-                          placeholder="수량"
-                          value={formSharesCount}
-                          onChange={(e) => setFormSharesCount(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="buyPrice">평균 매수 단가</label>
-                        <input 
-                          id="buyPrice"
-                          type="number" 
-                          step="any"
-                          className="form-control" 
-                          placeholder="단가"
-                          value={formBuyPrice}
-                          onChange={(e) => setFormBuyPrice(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="currency">거래 통화</label>
-                        <select 
-                          id="currency"
-                          className="form-control"
-                          value={formCurrency}
-                          onChange={(e) => setFormCurrency(e.target.value as 'KRW' | 'USD')}
-                        >
-                          <option value="USD">USD ($)</option>
-                          <option value="KRW">KRW (₩)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-                      <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                        {editingId ? '수정사항 저장' : '내 포트폴리오에 추가'}
-                      </button>
-                      {editingId && (
-                        <button type="button" onClick={resetForm} className="btn btn-secondary">
-                          취소
-                        </button>
-                      )}
-                    </div>
-                  </form>
+                  <StockForm
+                    editingItem={portfolios.find(p => p.id === editingId) || null}
+                    onSave={handleSaveStock}
+                    onCancel={resetForm}
+                  />
                 )}
               </div>
 
