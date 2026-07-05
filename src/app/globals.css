@@ -459,8 +459,46 @@ body {
   }
 }
 
-/* 모바일 주식 보유 현황 카드형 레이아웃 최적화 */
+/* 모바일 주식 보유 현황 카드형 레이아웃 및 요약 정보 최적화 */
 @media (max-width: 768px) {
+  /* 요약 지표 컴팩트 2x2 그리드화 */
+  .summary-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+  .stat-item {
+    padding: 0.8rem 0.9rem;
+    border-radius: 0.75rem;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+  }
+  .stat-value {
+    font-size: 1.2rem !important;
+  }
+  .stat-diff {
+    font-size: 0.7rem;
+    margin-top: 0.15rem;
+  }
+  .mobile-hide {
+    display: none !important;
+  }
+  
+  /* 모바일 버튼 크기 축소 */
+  .btn {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+  }
+
+  /* 헤더 타이틀 크기 조절 */
+  .logo-title {
+    font-size: 1.35rem;
+  }
+  
+  /* 주식 테이블 카드화 */
   .stock-table-wrapper {
     overflow-x: visible;
   }

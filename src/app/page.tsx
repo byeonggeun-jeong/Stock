@@ -908,7 +908,7 @@ export default function HomePage() {
                     <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                     시세 동기화
                   </button>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.4rem' }}>
+                  <div className="mobile-hide" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.4rem' }}>
                     실시간 시세가 1분마다 자동 동기화됩니다
                   </div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.2rem' }}>
