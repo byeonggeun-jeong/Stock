@@ -1162,6 +1162,33 @@ export default function HomePage() {
 
                   {/* 모바일 전용 정렬 셀렉터 */}
                   <div className="mobile-sort-container">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>조회:</span>
+                    <select
+                      value={selectedUserFilter}
+                      onChange={(e) => setSelectedUserFilter(e.target.value)}
+                      className="form-control"
+                      style={{ 
+                        width: 'auto', 
+                        display: 'inline-block', 
+                        padding: '0.25rem 1.5rem 0.25rem 0.5rem', 
+                        fontSize: '0.75rem', 
+                        height: 'auto',
+                        marginLeft: '0.35rem',
+                        marginRight: '0.75rem',
+                        background: 'var(--bg-main)',
+                        borderColor: 'var(--border-color)',
+                        borderRadius: '0.35rem',
+                        color: 'var(--text-primary)'
+                      }}
+                    >
+                      <option value="all">전체보기</option>
+                      {profiles.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.display_name}
+                        </option>
+                      ))}
+                    </select>
+
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>정렬:</span>
                     <select
                       value={sortColumn || 'none'}

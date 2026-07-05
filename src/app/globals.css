@@ -600,4 +600,9 @@ body {
     padding: 0 0.5rem;
     gap: 0.25rem;
   }
+  
+  /* 모바일에서 실시간 현황 옆의 회원 탭 숨기기 (셀렉터로 대체됨) */
+  .table-header-row .tabs-nav {
+    display: none;
+  }
 }
