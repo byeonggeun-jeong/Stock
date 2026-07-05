@@ -167,6 +167,7 @@ export default function HomePage() {
   // 1. 초기 데이터 마운트 및 로컬스토리지 연동 (Mock 모드 전용)
   useEffect(() => {
     setIsMounted(true);
+    console.log('[DEBUG] Mount useEffect executed. isMockMode:', isMockMode);
     
     if (isMockMode) {
       const storedProfilesRaw = localStorage.getItem('mock_profiles');
@@ -251,6 +252,7 @@ export default function HomePage() {
   // 실시간 주식 가격 패치
   const fetchStockPrices = useCallback(async (tickersList: string[]) => {
     if (tickersList.length === 0) return;
+    console.log('[DEBUG] fetchStockPrices API call triggered for:', tickersList);
     
     setRefreshing(true);
     try {
@@ -278,6 +280,7 @@ export default function HomePage() {
   useEffect(() => {
     if (portfolios.length > 0) {
       const tickers = portfolios.map(p => p.ticker);
+      console.log('[DEBUG] portfolios dependency changed. Running fetchStockPrices for:', tickers);
       fetchStockPrices(tickers);
     }
   }, [portfolios, fetchStockPrices]);
@@ -604,6 +607,7 @@ export default function HomePage() {
 
   // 자산 평가 및 보유 비중 계산 로직 (useMemo로 최적화하여 폼 입력 시의 리렌더링 버벅임 제거)
   const calculatedStocks = useMemo(() => {
+    console.log('[DEBUG] Recalculating calculatedStocks. Portfolios length:', portfolios.length, 'Cached prices:', Object.keys(stockPrices).length);
     const userTotals: Record<string, number> = {};
     
     const rawEvals = portfolios.map(item => {
