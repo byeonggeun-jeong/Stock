@@ -164,6 +164,7 @@ export default function HomePage() {
   const [formBuyPrice, setFormBuyPrice] = useState('');
   const [formCurrency, setFormCurrency] = useState<'KRW' | 'USD'>('USD');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [fetchingName, setFetchingName] = useState(false);
 
   // 1. 초기 데이터 마운트 및 로컬스토리지 연동 (Mock 모드 전용)
   useEffect(() => {
@@ -422,6 +423,47 @@ export default function HomePage() {
     setEditingId(null);
   };
 
+  // 티커 입력 필드 포커스 아웃 시 자동으로 종목명 가져오기
+  const handleTickerBlur = async () => {
+    const ticker = formTicker.trim().toUpperCase();
+    if (!ticker) return;
+
+    if (ticker !== formTicker) {
+      setFormTicker(ticker);
+    }
+
+    // 1. 이미 캐시된 주식 정보가 있다면 즉시 채우기
+    if (stockPrices[ticker]?.name) {
+      setFormStockName(stockPrices[ticker].name);
+      const isKorean = /^\d{6}/.test(ticker.replace(/\.(KS|KQ)$/, ''));
+      setFormCurrency(isKorean ? 'KRW' : 'USD');
+      return;
+    }
+
+    // 2. 캐시된 정보가 없다면 API 호출해서 가져오기
+    try {
+      setFetchingName(true);
+      const res = await fetch(`/api/stock?tickers=${ticker}`);
+      const result = await res.json();
+      if (result.data && result.data.length > 0) {
+        const info = result.data[0];
+        if (info.name && info.name !== ticker) {
+          setFormStockName(info.name);
+          setFormCurrency(info.currency as 'KRW' | 'USD');
+          
+          setStockPrices(prev => ({
+            ...prev,
+            [ticker]: info
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch stock name on blur:', error);
+    } finally {
+      setFetchingName(false);
+    }
+  };
+
   // 친구 목록 클릭 시 이름 채우고 비밀번호 창 오픈
   const handleSwitchMockUserClick = (userId: string) => {
     const user = profiles.find(p => p.id === userId);
@@ -583,6 +625,7 @@ export default function HomePage() {
     return rawEvals.map(item => {
       const priceInfo = stockPrices[item.ticker];
       const changePercent = priceInfo ? priceInfo.changePercent : 0;
+      const stock_name = (priceInfo && priceInfo.name) ? priceInfo.name : item.stock_name;
       
       const totalBuyVal = item.average_buy_price * item.shares_count;
       const totalCurrentVal = item.currentPrice * item.shares_count;
@@ -601,6 +644,7 @@ export default function HomePage() {
 
       return {
         ...item,
+        stock_name,
         owner,
         changePercent,
         totalBuyVal,
@@ -922,8 +966,8 @@ export default function HomePage() {
                               </td>
                               <td>
                                 <div className="stock-info">
-                                  <span className="stock-ticker">{stock.ticker}</span>
                                   <span className="stock-name">{stock.stock_name}</span>
+                                  <span className="stock-ticker">{stock.ticker}</span>
                                 </div>
                               </td>
                               <td>
@@ -1110,8 +1154,15 @@ export default function HomePage() {
                           placeholder="예: AAPL 또는 005930.KS"
                           value={formTicker}
                           onChange={(e) => setFormTicker(e.target.value)}
+                          onBlur={handleTickerBlur}
+                          disabled={fetchingName}
                         />
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        {fetchingName && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--primary)', display: 'block', marginTop: '0.2rem' }}>
+                            종목 정보를 조회하는 중...
+                          </span>
+                        )}
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.2rem' }}>
                           * 한국 주식은 종목코드 뒤에 .KS(코스피) 또는 .KQ(코스닥)를 붙여야 합니다.
                         </span>
                       </div>
@@ -1223,8 +1274,8 @@ export default function HomePage() {
                           >
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{item.ticker}</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.stock_name}</span>
+                                <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{stockPrices[item.ticker]?.name || item.stock_name}</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({item.ticker})</span>
                               </div>
                               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                                 {item.shares_count}주 | 평단 {item.currency === 'USD' ? '$' : '₩'}{item.average_buy_price.toLocaleString()}

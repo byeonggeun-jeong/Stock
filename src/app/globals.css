@@ -229,12 +229,12 @@ body {
   flex-direction: column;
 }
 
-.stock-ticker {
+.stock-name {
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.stock-name {
+.stock-ticker {
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin-top: 0.15rem;
