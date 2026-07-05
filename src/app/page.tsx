@@ -753,7 +753,24 @@ export default function HomePage() {
     value: parseFloat(item.value.toFixed(0))
   }));
 
-  const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#14b8a6'];
+  const COLORS = [
+    '#6366f1', // Indigo
+    '#06b6d4', // Cyan
+    '#10b981', // Emerald
+    '#f59e0b', // Amber
+    '#ec4899', // Pink
+    '#8b5cf6', // Violet
+    '#3b82f6', // Blue
+    '#14b8a6', // Teal
+    '#f43f5e', // Rose
+    '#84cc16', // Lime
+    '#ff7849', // Coral / Orange
+    '#a855f7', // Purple
+    '#38bdf8', // Sky
+    '#fb7185', // Soft Rose
+    '#22c55e', // Green
+    '#eab308'  // Yellow
+  ];
 
   if (!isMounted) return null;
 
@@ -1044,13 +1061,6 @@ export default function HomePage() {
                               ))}
                             </Pie>
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend 
-                              iconSize={10} 
-                              layout="horizontal" 
-                              verticalAlign="bottom" 
-                              align="center"
-                              wrapperStyle={{ fontSize: '0.75rem', paddingTop: '10px' }}
-                            />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
