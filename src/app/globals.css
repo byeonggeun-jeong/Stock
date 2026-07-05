@@ -458,3 +458,94 @@ body {
     justify-content: center;
   }
 }
+
+/* 모바일 주식 보유 현황 카드형 레이아웃 최적화 */
+@media (max-width: 768px) {
+  .stock-table-wrapper {
+    overflow-x: visible;
+  }
+  .stock-table thead {
+    display: none;
+  }
+  .stock-table, .stock-table tbody, .stock-table tr {
+    display: block;
+    width: 100%;
+  }
+  .stock-table tr {
+    display: grid;
+    grid-template-areas: 
+      "stock price"
+      "owner change"
+      "ratio profit";
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    padding: 1.25rem 1rem;
+    margin-bottom: 0.75rem;
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+  }
+  .stock-table td {
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    border: none !important;
+    justify-content: center;
+  }
+  .stock-table td:nth-child(1) { 
+    grid-area: owner; 
+    flex-direction: row; 
+    align-items: center; 
+    gap: 0.5rem; 
+  }
+  .stock-table td:nth-child(2) { 
+    grid-area: stock; 
+    align-items: flex-start; 
+  }
+  .stock-table td:nth-child(3) { 
+    grid-area: price; 
+    align-items: flex-end; 
+    font-weight: 600; 
+  }
+  .stock-table td:nth-child(4) { 
+    grid-area: change; 
+    align-items: flex-end; 
+  }
+  .stock-table td:nth-child(5) { 
+    grid-area: profit; 
+    align-items: flex-end; 
+  }
+  .stock-table td:nth-child(6) { 
+    grid-area: ratio; 
+    align-items: flex-start; 
+    width: 100%; 
+  }
+  .stock-table td:nth-child(3)::before {
+    content: "현재가";
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+    font-weight: 500;
+  }
+  .stock-table td:nth-child(4)::before {
+    content: "당일 등락률";
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+    font-weight: 500;
+  }
+  .stock-table td:nth-child(5)::before {
+    content: "수익률";
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+    font-weight: 500;
+  }
+  .stock-table td:nth-child(6)::before {
+    content: "보유 비중";
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+    font-weight: 500;
+  }
+}

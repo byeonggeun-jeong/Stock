@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   Plus, 
   Trash2, 
   RefreshCw, 
-  User, 
+  User,
   LayoutDashboard, 
   Settings, 
   LogOut, 
@@ -17,7 +15,7 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase, isMockMode } from '@/lib/supabase';
 
  
