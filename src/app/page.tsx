@@ -1132,114 +1132,96 @@ export default function HomePage() {
               <div className="dashboard-grid">
                 {/* 왼쪽: 주식 리스트 테이블 */}
                 <div className="card" style={{ overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <h2 className="card-title">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <h2 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <LayoutDashboard size={20} style={{ color: 'var(--secondary)' }} />
                       실시간 보유 주식 현황
                     </h2>
                     
-                    {/* 친구 필터 칩 */}
-                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`tab-btn ${selectedUserFilter === 'all' ? 'active' : ''}`}
-                        onClick={() => setSelectedUserFilter('all')}
-                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
-                      >
-                        전체보기
-                      </button>
-                      {profiles.map(user => (
-                        <button
-                          key={user.id}
-                          className={`tab-btn ${selectedUserFilter === user.id ? 'active' : ''}`}
-                          onClick={() => setSelectedUserFilter(user.id)}
-                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
-                        >
-                          {user.display_name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 모바일 전용 정렬 셀렉터 */}
-                  <div className="mobile-sort-container">
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>조회:</span>
-                    <select
-                      value={selectedUserFilter}
-                      onChange={(e) => setSelectedUserFilter(e.target.value)}
-                      className="form-control"
-                      style={{ 
-                        width: 'auto', 
-                        display: 'inline-block', 
-                        padding: '0.25rem 1.5rem 0.25rem 0.5rem', 
-                        fontSize: '0.75rem', 
-                        height: 'auto',
-                        marginLeft: '0.35rem',
-                        marginRight: '0.75rem',
-                        background: 'var(--bg-main)',
-                        borderColor: 'var(--border-color)',
-                        borderRadius: '0.35rem',
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <option value="all">전체보기</option>
-                      {profiles.map(user => (
-                        <option key={user.id} value={user.id}>
-                          {user.display_name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>정렬:</span>
-                    <select
-                      value={sortColumn || 'none'}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === 'none') {
-                          setSortColumn(null);
-                        } else {
-                          setSortColumn(val);
-                        }
-                      }}
-                      className="form-control"
-                      style={{ 
-                        width: 'auto', 
-                        display: 'inline-block', 
-                        padding: '0.25rem 1.5rem 0.25rem 0.5rem', 
-                        fontSize: '0.75rem', 
-                        height: 'auto',
-                        marginLeft: '0.35rem',
-                        background: 'var(--bg-main)',
-                        borderColor: 'var(--border-color)',
-                        borderRadius: '0.35rem',
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <option value="none">기본순</option>
-                      <option value="owner">보유자순</option>
-                      <option value="ticker">종목(티커)순</option>
-                      <option value="currentPrice">현재가순</option>
-                      <option value="changePercent">당일등락률순</option>
-                      <option value="profitLossRatio">수익률순</option>
-                      <option value="portfolioRatio">보유비중순</option>
-                    </select>
-
-                    {sortColumn && (
-                      <button
-                        onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                        className="btn btn-secondary"
+                    {/* 상단 통합 컨트롤러 (조회 필터 & 정렬) */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.4rem', 
+                      flexWrap: 'nowrap'
+                    }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>조회:</span>
+                      <select
+                        value={selectedUserFilter}
+                        onChange={(e) => setSelectedUserFilter(e.target.value)}
+                        className="form-control"
                         style={{ 
-                          padding: '0.25rem 0.5rem', 
+                          width: '90px', 
+                          display: 'inline-block', 
+                          padding: '0.25rem 1.25rem 0.25rem 0.4rem', 
                           fontSize: '0.75rem', 
-                          marginLeft: '0.35rem',
                           height: 'auto',
-                          lineHeight: '1',
-                          display: 'inline-flex',
-                          alignItems: 'center'
+                          background: 'var(--bg-main)',
+                          borderColor: 'var(--border-color)',
+                          borderRadius: '0.35rem',
+                          color: 'var(--text-primary)',
+                          textOverflow: 'ellipsis'
                         }}
                       >
-                        {sortDirection === 'asc' ? '▲' : '▼'}
-                      </button>
-                    )}
+                        <option value="all">전체보기</option>
+                        {profiles.map(user => (
+                          <option key={user.id} value={user.id}>
+                            {user.display_name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>정렬:</span>
+                      <select
+                        value={sortColumn || 'none'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'none') {
+                            setSortColumn(null);
+                          } else {
+                            setSortColumn(val);
+                          }
+                        }}
+                        className="form-control"
+                        style={{ 
+                          width: '100px', 
+                          display: 'inline-block', 
+                          padding: '0.25rem 1.25rem 0.25rem 0.4rem', 
+                          fontSize: '0.75rem', 
+                          height: 'auto',
+                          background: 'var(--bg-main)',
+                          borderColor: 'var(--border-color)',
+                          borderRadius: '0.35rem',
+                          color: 'var(--text-primary)',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        <option value="none">기본순</option>
+                        <option value="owner">보유자순</option>
+                        <option value="ticker">종목순</option>
+                        <option value="currentPrice">현재가순</option>
+                        <option value="changePercent">등락률순</option>
+                        <option value="profitLossRatio">수익률순</option>
+                        <option value="portfolioRatio">비중순</option>
+                      </select>
+
+                      {sortColumn && (
+                        <button
+                          onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                          className="btn btn-secondary"
+                          style={{ 
+                            padding: '0.25rem 0.4rem', 
+                            fontSize: '0.75rem', 
+                            height: 'auto',
+                            lineHeight: '1',
+                            display: 'inline-flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="stock-table-wrapper">
