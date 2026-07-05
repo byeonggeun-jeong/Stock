@@ -606,3 +606,15 @@ body {
     display: none;
   }
 }
+
+/* PC에서는 정렬 리스트박스 숨김 */
+.mobile-sort-only {
+  display: none !important;
+}
+
+/* 모바일에서만 노출시킴 */
+@media (max-width: 768px) {
+  .mobile-sort-only {
+    display: flex !important;
+  }
+}

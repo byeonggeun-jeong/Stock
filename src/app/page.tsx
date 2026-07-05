@@ -1171,56 +1171,58 @@ export default function HomePage() {
                         ))}
                       </select>
 
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>정렬:</span>
-                      <select
-                        value={sortColumn || 'none'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === 'none') {
-                            setSortColumn(null);
-                          } else {
-                            setSortColumn(val);
-                          }
-                        }}
-                        className="form-control"
-                        style={{ 
-                          width: '100px', 
-                          display: 'inline-block', 
-                          padding: '0.25rem 1.25rem 0.25rem 0.4rem', 
-                          fontSize: '0.75rem', 
-                          height: 'auto',
-                          background: 'var(--bg-main)',
-                          borderColor: 'var(--border-color)',
-                          borderRadius: '0.35rem',
-                          color: 'var(--text-primary)',
-                          textOverflow: 'ellipsis'
-                        }}
-                      >
-                        <option value="none">기본순</option>
-                        <option value="owner">보유자순</option>
-                        <option value="ticker">종목순</option>
-                        <option value="currentPrice">현재가순</option>
-                        <option value="changePercent">등락률순</option>
-                        <option value="profitLossRatio">수익률순</option>
-                        <option value="portfolioRatio">비중순</option>
-                      </select>
-
-                      {sortColumn && (
-                        <button
-                          onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                          className="btn btn-secondary"
+                      <div className="mobile-sort-only" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>정렬:</span>
+                        <select
+                          value={sortColumn || 'none'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'none') {
+                              setSortColumn(null);
+                            } else {
+                              setSortColumn(val);
+                            }
+                          }}
+                          className="form-control"
                           style={{ 
-                            padding: '0.25rem 0.4rem', 
+                            width: '100px', 
+                            display: 'inline-block', 
+                            padding: '0.25rem 1.25rem 0.25rem 0.4rem', 
                             fontSize: '0.75rem', 
                             height: 'auto',
-                            lineHeight: '1',
-                            display: 'inline-flex',
-                            alignItems: 'center'
+                            background: 'var(--bg-main)',
+                            borderColor: 'var(--border-color)',
+                            borderRadius: '0.35rem',
+                            color: 'var(--text-primary)',
+                            textOverflow: 'ellipsis'
                           }}
                         >
-                          {sortDirection === 'asc' ? '▲' : '▼'}
-                        </button>
-                      )}
+                          <option value="none">기본순</option>
+                          <option value="owner">보유자순</option>
+                          <option value="ticker">종목순</option>
+                          <option value="currentPrice">현재가순</option>
+                          <option value="changePercent">등락률순</option>
+                          <option value="profitLossRatio">수익률순</option>
+                          <option value="portfolioRatio">비중순</option>
+                        </select>
+
+                        {sortColumn && (
+                          <button
+                            onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                            className="btn btn-secondary"
+                            style={{ 
+                              padding: '0.25rem 0.4rem', 
+                              fontSize: '0.75rem', 
+                              height: 'auto',
+                              lineHeight: '1',
+                              display: 'inline-flex',
+                              alignItems: 'center'
+                            }}
+                          >
+                            {sortDirection === 'asc' ? '▲' : '▼'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
