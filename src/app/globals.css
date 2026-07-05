@@ -68,6 +68,13 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+
+.logo-section:hover {
+  opacity: 0.85;
 }
 
 .logo-icon {

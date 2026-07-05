@@ -603,8 +603,8 @@ export default function HomePage() {
     setActiveTab('dashboard');
   };
 
-  // 자산 평가 및 보유 비중 계산 로직
-  const getCalculatedStocks = () => {
+  // 자산 평가 및 보유 비중 계산 로직 (useMemo로 최적화하여 폼 입력 시의 리렌더링 버벅임 제거)
+  const calculatedStocks = useMemo(() => {
     const userTotals: Record<string, number> = {};
     
     const rawEvals = portfolios.map(item => {
@@ -657,13 +657,13 @@ export default function HomePage() {
         isOwner
       };
     });
-  };
+  }, [portfolios, stockPrices, profiles, exchangeRate, currentUser]);
 
-  const calculatedStocks = getCalculatedStocks();
-
-  const filteredCalculatedStocks = selectedUserFilter === 'all'
-    ? calculatedStocks
-    : calculatedStocks.filter(s => s.user_id === selectedUserFilter);
+  const filteredCalculatedStocks = useMemo(() => {
+    return selectedUserFilter === 'all'
+      ? calculatedStocks
+      : calculatedStocks.filter(s => s.user_id === selectedUserFilter);
+  }, [calculatedStocks, selectedUserFilter]);
 
   // 정렬 핸들러
   const handleSort = (columnKey: string) => {
@@ -734,24 +734,34 @@ export default function HomePage() {
   const isFilterTargetMe = currentUser !== null && selectedUserFilter === currentUser.id;
   const showSummaryStats = isFilterTargetMe; 
 
-  const totalBuyKRW = filteredCalculatedStocks.reduce((sum, item) => sum + item.buyValKRW, 0);
-  const totalCurrentKRW = filteredCalculatedStocks.reduce((sum, item) => sum + item.currentValKRW, 0);
-  const totalProfitLossKRW = totalCurrentKRW - totalBuyKRW;
-  const totalProfitLossRatio = totalBuyKRW > 0 ? (totalProfitLossKRW / totalBuyKRW) * 100 : 0;
+  const { totalBuyKRW, totalCurrentKRW, totalProfitLossKRW, totalProfitLossRatio } = useMemo(() => {
+    const buy = filteredCalculatedStocks.reduce((sum, item) => sum + item.buyValKRW, 0);
+    const current = filteredCalculatedStocks.reduce((sum, item) => sum + item.currentValKRW, 0);
+    const diff = current - buy;
+    const ratio = buy > 0 ? (diff / buy) * 100 : 0;
+    return {
+      totalBuyKRW: buy,
+      totalCurrentKRW: current,
+      totalProfitLossKRW: diff,
+      totalProfitLossRatio: ratio
+    };
+  }, [filteredCalculatedStocks]);
 
-  const chartData = Object.values(
-    filteredCalculatedStocks.reduce<Record<string, { name: string; value: number }>>((acc, stock) => {
-      const key = stock.ticker;
-      if (!acc[key]) {
-        acc[key] = { name: stock.stock_name || stock.ticker, value: 0 };
-      }
-      acc[key].value += stock.currentValKRW;
-      return acc;
-    }, {})
-  ).map(item => ({
-    name: item.name,
-    value: parseFloat(item.value.toFixed(0))
-  }));
+  const chartData = useMemo(() => {
+    return Object.values(
+      filteredCalculatedStocks.reduce<Record<string, { name: string; value: number }>>((acc, stock) => {
+        const key = stock.ticker;
+        if (!acc[key]) {
+          acc[key] = { name: stock.stock_name || stock.ticker, value: 0 };
+        }
+        acc[key].value += stock.currentValKRW;
+        return acc;
+      }, {})
+    ).map(item => ({
+      name: item.name,
+      value: parseFloat(item.value.toFixed(0))
+    }));
+  }, [filteredCalculatedStocks]);
 
   const COLORS = [
     '#6366f1', // Indigo
@@ -778,7 +788,7 @@ export default function HomePage() {
     <>
       {/* 1. 상단 네비게이션 헤더 */}
       <header className="header">
-        <div className="logo-section">
+        <div className="logo-section" onClick={() => setActiveTab('dashboard')}>
           <AntIcon className="logo-icon" />
           <h1 className="logo-title">GaemiStock Dashboard</h1>
         </div>
