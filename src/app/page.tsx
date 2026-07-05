@@ -1245,7 +1245,7 @@ export default function HomePage() {
                               현재가 {getSortIcon('currentPrice')}
                             </th>
                             <th onClick={() => handleSort('changePercent')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                              당일 등락률 {getSortIcon('changePercent')}
+                              등락률 {getSortIcon('changePercent')}
                             </th>
                             <th onClick={() => handleSort('profitLossRatio')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                               수익률 {getSortIcon('profitLossRatio')}

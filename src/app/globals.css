@@ -287,6 +287,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  white-space: nowrap;
 }
 
 /* User Selection Sidebar */
@@ -564,7 +565,7 @@ body {
     font-weight: 500;
   }
   .stock-table td:nth-child(4)::before {
-    content: "당일 등락률";
+    content: "등락률";
     font-size: 0.65rem;
     color: var(--text-secondary);
     margin-bottom: 0.15rem;
@@ -616,5 +617,24 @@ body {
 @media (max-width: 768px) {
   .mobile-sort-only {
     display: flex !important;
+  }
+}
+
+/* PC 전용 테이블 컬럼 및 간격 최적화 */
+@media (min-width: 769px) {
+  .stock-table th:first-child,
+  .stock-table td:first-child {
+    width: 16%;
+    min-width: 125px;
+  }
+  
+  .stock-table th:nth-child(4),
+  .stock-table td:nth-child(4) {
+    padding-right: 0.25rem !important;
+  }
+  
+  .stock-table th:nth-child(5),
+  .stock-table td:nth-child(5) {
+    padding-left: 0.25rem !important;
   }
 }
