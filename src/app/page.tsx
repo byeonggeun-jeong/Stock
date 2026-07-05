@@ -265,6 +265,104 @@ const StockForm = ({ editingItem, onSave, onCancel }: StockFormProps) => {
   );
 };
 
+// --- 독립된 자식 컴포넌트로 로그인/회원가입 모달 분리 (타이핑 시의 랙 제거) ---
+interface AuthModalProps {
+  isOpen: boolean;
+  initialDisplayName: string;
+  initialIsRegisterMode: boolean;
+  onClose: () => void;
+  onSubmit: (displayName: string, password: string, isRegisterMode: boolean) => Promise<void>;
+}
+
+const AuthModal = ({ isOpen, initialDisplayName, initialIsRegisterMode, onClose, onSubmit }: AuthModalProps) => {
+  const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDisplayName(initialDisplayName);
+      setPassword('');
+      setIsRegisterMode(initialIsRegisterMode);
+    }
+  }, [isOpen, initialDisplayName, initialIsRegisterMode]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!displayName || !password) {
+      alert('이름과 비밀번호를 입력해주세요.');
+      return;
+    }
+    onSubmit(displayName, password, isRegisterMode);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="auth-header">
+          <h3 className="auth-title">{isRegisterMode ? '친구 등록 (가입)' : '보안 로그인'}</h3>
+          <p className="auth-desc">대시보드 권한 획득을 위해 정보를 입력하세요.</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="authDisplayName">이름 (아이디)</label>
+            <input 
+              id="authDisplayName"
+              type="text" 
+              className="form-control" 
+              placeholder="본인 이름을 입력하세요 (예: 김철수)"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="authPassword">비밀번호</label>
+            <input 
+              id="authPassword"
+              type="password" 
+              className="form-control" 
+              placeholder="비밀번호를 입력하세요"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
+            {isRegisterMode ? '친구 등록 완료' : '보안 로그인'}
+          </button>
+
+          <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {isRegisterMode ? '이미 등록되어 있으신가요?' : '새로운 친구로 등록하시나요?'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(!isRegisterMode)}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'var(--primary)', 
+                fontWeight: 600, 
+                marginLeft: '0.35rem', 
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
+              {isRegisterMode ? '로그인하기' : '친구 등록하기'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'manage'>('dashboard');
   const [isMounted, setIsMounted] = useState(false);
@@ -278,11 +376,8 @@ export default function HomePage() {
   
   // 로그인한 유저 상태
   const [currentUser, setCurrentUser] = useState<Profile | null>(null);
-  const [selectedUserFilter, setSelectedUserFilter] = useState<string>('all'); // 대시보드 필터용
-  
-  // 인증 관련 UI 상태 (이름과 비밀번호만 사용)
+  const [selectedUserFilter, setSelectedUserFilter] = useState<string>('all');
   const [authDisplayName, setAuthDisplayName] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   
@@ -537,7 +632,6 @@ export default function HomePage() {
     const user = profiles.find(p => p.id === userId);
     if (user) {
       setAuthDisplayName(user.display_name);
-      setAuthPassword('');
       setIsRegisterMode(false);
       setAuthModalOpen(true);
     }
@@ -564,15 +658,13 @@ export default function HomePage() {
     
     // 추가 후 로그인 모달 자동 활성화
     setAuthDisplayName(newUser.display_name);
-    setAuthPassword('');
     setIsRegisterMode(false);
     setAuthModalOpen(true);
   };
 
   // 이름 + 비밀번호 로그인/회원가입 처리
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authDisplayName || !authPassword) {
+  const handleAuthSubmit = async (displayName: string, password: string, isRegisterMode: boolean) => {
+    if (!displayName || !password) {
       alert('이름과 비밀번호를 입력해주세요.');
       return;
     }
@@ -587,9 +679,9 @@ export default function HomePage() {
       return `user_${code}@stockus.com`;
     };
 
-    const virtualEmail = getSafeEmail(authDisplayName);
+    const virtualEmail = getSafeEmail(displayName);
 
-    if (authPassword.length < 4) {
+    if (password.length < 4) {
       alert('비밀번호는 최소 4글자 이상이어야 합니다.');
       return;
     }
@@ -598,7 +690,7 @@ export default function HomePage() {
       const storedProfiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
       
       if (isRegisterMode) {
-        if (storedProfiles.find((p: any) => p.display_name === authDisplayName.trim())) {
+        if (storedProfiles.find((p: any) => p.display_name === displayName.trim())) {
           alert('이미 존재하는 이름입니다.');
           return;
         }
@@ -606,17 +698,17 @@ export default function HomePage() {
         const newProfile = {
           id: newId,
           email: virtualEmail,
-          display_name: authDisplayName.trim(),
-          password: authPassword
+          display_name: displayName.trim(),
+          password: password
         };
         const updated = [...storedProfiles, newProfile];
         localStorage.setItem('mock_profiles', JSON.stringify(updated));
         setProfiles(updated);
         setCurrentUser(newProfile);
-        alert(`'${authDisplayName}'님으로 회원가입 및 로그인되었습니다.`);
+        alert(`'${displayName}'님으로 회원가입 및 로그인되었습니다.`);
       } else {
         const found = storedProfiles.find(
-          (p: any) => p.display_name === authDisplayName.trim() && p.password === authPassword
+          (p: any) => p.display_name === displayName.trim() && p.password === password
         );
         if (found) {
           setCurrentUser(found);
@@ -626,11 +718,10 @@ export default function HomePage() {
         }
       }
       setAuthModalOpen(false);
-      setAuthPassword('');
     } else {
       try {
         // Supabase Auth의 최소 6자 비밀번호 강제 정책을 우회하기 위해 내부적으로 솔트 접미사 추가
-        const securePassword = authPassword.length < 6 ? `${authPassword}_gaemi` : authPassword;
+        const securePassword = password.length < 6 ? `${password}_gaemi` : password;
 
         if (isRegisterMode) {
           const { error } = await supabase.auth.signUp({
@@ -638,12 +729,12 @@ export default function HomePage() {
             password: securePassword,
             options: {
               data: {
-                display_name: authDisplayName.trim()
+                display_name: displayName.trim()
               }
             }
           });
           if (error) throw error;
-          alert(`'${authDisplayName}'님 계정이 등록되었습니다.`);
+          alert(`'${displayName}'님 계정이 등록되었습니다.`);
         } else {
           const { error } = await supabase.auth.signInWithPassword({
             email: virtualEmail,
@@ -652,7 +743,6 @@ export default function HomePage() {
           if (error) throw error;
         }
         setAuthModalOpen(false);
-        setAuthPassword('');
         await checkSupabaseSession();
       } catch (err: any) {
         alert(`인증 오류: ${err.message}`);
@@ -903,7 +993,6 @@ export default function HomePage() {
             <button 
               onClick={() => {
                 setAuthDisplayName('');
-                setAuthPassword('');
                 setIsRegisterMode(false);
                 setAuthModalOpen(true);
               }}
@@ -1316,70 +1405,13 @@ export default function HomePage() {
       )}
 
       {/* 4. 인증 팝업 모달 (이름과 비밀번호만 받도록 단순화) */}
-      {authModalOpen && (
-        <div className="modal-overlay" onClick={() => setAuthModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="auth-header">
-              <h3 className="auth-title">{isRegisterMode ? '친구 등록 (가입)' : '보안 로그인'}</h3>
-              <p className="auth-desc">대시보드 권한 획득을 위해 정보를 입력하세요.</p>
-            </div>
-
-            <form onSubmit={handleAuthSubmit}>
-              <div className="form-group">
-                <label htmlFor="authDisplayName">이름 (아이디)</label>
-                <input 
-                  id="authDisplayName"
-                  type="text" 
-                  className="form-control" 
-                  placeholder="본인 이름을 입력하세요 (예: 김철수)"
-                  value={authDisplayName}
-                  onChange={(e) => setAuthDisplayName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="authPassword">비밀번호</label>
-                <input 
-                  id="authPassword"
-                  type="password" 
-                  className="form-control" 
-                  placeholder="비밀번호를 입력하세요"
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  required
-                />
-
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
-                {isRegisterMode ? '친구 등록 완료' : '보안 로그인'}
-              </button>
-
-              <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>
-                  {isRegisterMode ? '이미 등록되어 있으신가요?' : '새로운 친구로 등록하시나요?'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsRegisterMode(!isRegisterMode)}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: 'var(--primary)', 
-                    fontWeight: 600, 
-                    marginLeft: '0.35rem', 
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-sans)'
-                  }}
-                >
-                  {isRegisterMode ? '로그인하기' : '친구 등록하기'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AuthModal
+        isOpen={authModalOpen}
+        initialDisplayName={authDisplayName}
+        initialIsRegisterMode={isRegisterMode}
+        onClose={() => setAuthModalOpen(false)}
+        onSubmit={handleAuthSubmit}
+      />
     </>
   );
 }
