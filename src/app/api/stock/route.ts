@@ -37,10 +37,14 @@ async function fetchStockInfoFromNaver(ticker: string) {
       const stockData = data.result?.areas?.[0]?.datas?.[0];
       if (!stockData) throw new Error("No polling data found");
 
+      const rawCr = stockData.cr;
+      const rf = stockData.rf;
+      const changePercent = (rf === '4' || rf === '5') ? -rawCr : rawCr;
+
       return {
         ticker: cleanTicker,
         price: stockData.nv,
-        changePercent: stockData.cr,
+        changePercent,
         name: stockData.nm,
         currency: 'KRW'
       };
@@ -90,7 +94,12 @@ async function fetchStockInfoFromNaver(ticker: string) {
       const successfulData = await Promise.any(promises);
 
       const cleanPrice = parseFloat(successfulData.closePrice.replace(/,/g, ''));
-      const changeRatio = parseFloat(successfulData.fluctuationsRatio || '0');
+      let changeRatio = parseFloat(successfulData.fluctuationsRatio || '0');
+      const compCode = successfulData.compareToPreviousPrice?.code || '';
+      if ((compCode === '4' || compCode === '5') && changeRatio > 0) {
+        changeRatio = -changeRatio;
+      }
+
       const currencyCode = typeof successfulData.currencyType === 'object' && successfulData.currencyType !== null 
         ? successfulData.currencyType.code || 'USD' 
         : successfulData.currencyType || 'USD';
