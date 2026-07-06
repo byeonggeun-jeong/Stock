@@ -812,7 +812,7 @@ export default function HomePage() {
     setActiveTab('dashboard');
   };
 
-  // 자산 평가 및 보유 비중 계산 로직 (useMemo로 최적화하여 폼 입력 시의 리렌더링 버벅임 제거)
+  // 자산 평가 및 보유 비중 계산 로직 (useMemo로 최적화하여 폼 입력 시의 리렌더링 버버림 제거)
   const calculatedStocks = useMemo(() => {
     console.log('[DEBUG] Recalculating calculatedStocks. Portfolios length:', portfolios.length, 'Cached prices:', Object.keys(stockPrices).length);
     const userTotals: Record<string, number> = {};
@@ -820,14 +820,26 @@ export default function HomePage() {
     const rawEvals = portfolios.map(item => {
       const priceInfo = stockPrices[item.ticker];
       const currentPrice = priceInfo ? priceInfo.price : item.average_buy_price;
-      const totalCurrentVal = currentPrice * item.shares_count;
+      
+      // 1. API 가격의 실제 통화 (기본값은 아이템 등록 통화)
+      const priceCurrency = priceInfo ? priceInfo.currency : item.currency;
+      
+      // 2. 현재가를 아이템 거래 통화(item.currency)에 맞추어 변환
+      let currentPriceInItemCurrency = currentPrice;
+      if (priceCurrency === 'KRW' && item.currency === 'USD') {
+        currentPriceInItemCurrency = currentPrice / exchangeRate;
+      } else if (priceCurrency === 'USD' && item.currency === 'KRW') {
+        currentPriceInItemCurrency = currentPrice * exchangeRate;
+      }
+
+      const totalCurrentVal = currentPriceInItemCurrency * item.shares_count;
       const currentValKRW = item.currency === 'USD' ? totalCurrentVal * exchangeRate : totalCurrentVal;
       
       userTotals[item.user_id] = (userTotals[item.user_id] || 0) + currentValKRW;
       
       return {
         ...item,
-        currentPrice,
+        currentPrice: currentPriceInItemCurrency,
         currentValKRW
       };
     });
