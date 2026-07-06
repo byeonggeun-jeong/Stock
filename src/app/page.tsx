@@ -181,7 +181,7 @@ const StockForm = ({ editingItem, onSave, onCancel, stockPrices, setStockPrices 
     // 2. 캐시된 정보가 없다면 API 호출해서 가져오기
     try {
       setFetchingName(true);
-      const res = await fetch(`/api/stock?tickers=${cleanTicker}`);
+      const res = await fetch(`/api/stock?tickers=${cleanTicker}&t=${Date.now()}`);
       const result = await res.json();
       if (result.data && result.data.length > 0) {
         const info = result.data[0];
@@ -535,7 +535,7 @@ export default function HomePage() {
     setRefreshing(true);
     try {
       const tickersString = Array.from(new Set(tickersList)).join(',');
-      const res = await fetch(`/api/stock?tickers=${tickersString}`);
+      const res = await fetch(`/api/stock?tickers=${tickersString}&t=${Date.now()}`);
       const result = await res.json();
       
       if (result.data) {
